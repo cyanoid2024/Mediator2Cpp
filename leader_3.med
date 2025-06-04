@@ -1,0 +1,146 @@
+typedef enum { pending, acknowledged, empty_leaderStatus } as status;
+
+typedef enum { waiting, leader, follower} as workerStatus;
+
+typedef enum { vote, ack, empty_vtype } as vType; 
+
+typedef struct {
+	vtype: vType,
+	id: int
+} as voteMsg;
+
+typedef struct {
+	leaderStatus : status,
+	localID : int,
+	leaderID : int
+} as localMsg;
+
+
+
+automaton <id:int> election_module (
+	left  : in voteMsg,  right  : out voteMsg,
+	query : in localMsg, notice : out localMsg
+) {
+	variables {
+		leader_status : status init pending;
+		buffer : voteMsg init {vtype: vote, id:id};
+		leaderId : int init 0;
+	}
+	
+	transitions {
+		true -> { left.reqRead := buffer == {vtype: empty_vtype, id:0}; right.reqWrite := buffer != null; }
+		
+		buffer != {vtype: empty_vtype, id:0} && buffer.vtype == vote && buffer.id < id -> {
+            buffer := {vtype: empty_vtype, id:0};
+        }
+		buffer != {vtype: empty_vtype, id:0} && buffer.vtype == vote && buffer.id == id -> {
+			buffer.vtype := ack;
+		}
+		
+		buffer != {vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id < id -> {
+			// restart voting if the acknowledged leader has a smaller id
+			buffer := { vtype: vote, id: id };
+		}
+		
+		// 当 buffer.id == id 时
+        buffer != {vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id >= id && buffer.id == id -> {
+            leader_status := acknowledged;
+            leaderId := buffer.id;
+            buffer := {vtype: empty_vtype, id:0};
+        }
+
+        // 当 buffer.id != id 时
+        buffer != {vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id >= id && buffer.id != id -> {
+            leader_status := acknowledged;
+            leaderId := buffer.id;
+            // buffer 保持不变
+        }
+		
+		buffer == {vtype: empty_vtype, id:0} && left.reqWrite -> {
+			perform left;
+			buffer := left.value;
+		}
+		
+		buffer != {vtype: empty_vtype, id:0} && right.reqRead -> {
+			right.value := buffer;
+			perform right;
+		}
+	
+	/*
+	 * transitions that describe local communication between a component and the leader election module
+	 */
+
+		true -> { notice.reqWrite := query.reqWrite; query.reqRead := notice.reqRead; }
+		
+		notice.reqRead && notice.reqWrite -> {
+			perform query;
+			notice.value := { leaderStatus : leader_status, localID: id, leaderID: leaderID };
+			perform notice;
+		}
+	}
+}
+
+// 在这里瞎编一个worker
+automaton <name:int> worker(
+    query : out localMsg, 
+    notice : in localMsg
+) {
+    variables {
+        worker_status : workerStatus init waiting;
+    }
+
+    transitions {
+        // 接收领导者通知
+        notice.reqWrite && notice.value.leaderStatus == acknowledged && 
+        notice.value.leaderID == notice.value.localID -> {
+            perform notice;
+            worker_status := leader;
+        }
+        
+        // 接收跟随者通知
+        notice.reqWrite && notice.value.leaderStatus == acknowledged && 
+        notice.value.leaderID != notice.value.localID -> {
+            perform notice;
+            worker_status := follower;
+        }
+        
+        // 接收等待通知
+        notice.reqWrite && notice.value.leaderStatus == pending -> {
+            perform notice;
+            worker_status := waiting;
+        }
+        
+        // 保持查询通道活跃（可选）
+        true -> {
+            query.reqWrite := true;
+            query.value := { leaderStatus: empty_leaderStatus, localID: 0, leaderID: 0 };
+            perform query;
+        }
+    }
+}
+
+
+
+system cluster_instance() {
+	components {
+		E1 : election_module<1>;
+        E2 : election_module<2>;
+		E3 : election_module<3>;
+		// worker is a undefined computing process and they can be anything
+		C1: worker<1>;
+        C2: worker<2>;
+        C3: worker<3>;
+	}
+	connections {
+		Sync<msgVote>(E1.left, E2.right);
+		Sync<msgVote>(E2.right, E3.left );
+		Sync<msgVote>(E3.right, E1.left );
+		
+		Sync<msgLocal>(C1.query,  E1.query );
+		Sync<msgLocal>(C1.notice, E1.notice);
+		Sync<msgLocal>(C2.query,  E2.query );
+		Sync<msgLocal>(C2.notice, E2.notice);
+		Sync<msgLocal>(C3.query,  E3.query );
+		Sync<msgLocal>(C3.notice, E3.notice);
+	}
+}

@@ -1,0 +1,744 @@
+{
+  "start": [
+    {
+      "typedef": {
+        "struct_def": {
+          "struct": [
+            {
+              "field": {
+                "ID": "vtype",
+                "type": [
+                  {
+                    "enum_type": {
+                      "items": [
+                        "vote",
+                        "ack"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "field": {
+                "ID": "id",
+                "type": [
+                  {
+                    "primitive_type": {
+                      "name": "int",
+                      "range": null
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "ID": "voteMsg"
+      }
+    },
+    {
+      "typedef": {
+        "struct_def": {
+          "struct": [
+            {
+              "field": {
+                "ID": "leaderStatus",
+                "type": [
+                  {
+                    "enum_type": {
+                      "items": [
+                        "pending",
+                        "acknowledged"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "field": {
+                "ID": "localID",
+                "type": [
+                  {
+                    "primitive_type": {
+                      "name": "int",
+                      "range": null
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "field": {
+                "ID": "leaderID",
+                "type": [
+                  {
+                    "primitive_type": {
+                      "name": "int",
+                      "range": null
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "ID": "localMsg"
+      }
+    },
+    {
+      "automaton": {
+        "ID": "election_module",
+        "template": [
+          {
+            "template_param": {
+              "ID": "id",
+              "type": [
+                {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "ports": {
+          "ports": [
+            {
+              "port": {
+                "ID": "left",
+                "DIRECTION": "in",
+                "type": [
+                  "voteMsg"
+                ]
+              }
+            },
+            {
+              "port": {
+                "ID": "right",
+                "DIRECTION": "out",
+                "type": [
+                  "voteMsg"
+                ]
+              }
+            },
+            {
+              "port": {
+                "ID": "query",
+                "DIRECTION": "in",
+                "type": [
+                  "localMsg"
+                ]
+              }
+            },
+            {
+              "port": {
+                "ID": "notice",
+                "DIRECTION": "out",
+                "type": [
+                  "localMsg"
+                ]
+              }
+            }
+          ]
+        },
+        "variables": {
+          "variables": [
+            {
+              "var_decl": {
+                "ID": "leaderStatus",
+                "type": [
+                  {
+                    "enum_type": {
+                      "items": [
+                        "pending",
+                        "acknowledged"
+                      ]
+                    }
+                  }
+                ],
+                "init_expr": "pending"
+              }
+            },
+            {
+              "var_decl": {
+                "ID": "buffer",
+                "type": [
+                  "voteMsg"
+                ],
+                "init_expr": {
+                  "struct_literal": {
+                    "fields": [
+                      {
+                        "field_init": {
+                          "name": "vtype",
+                          "expr": "vote"
+                        }
+                      },
+                      {
+                        "field_init": {
+                          "name": "id",
+                          "expr": "id"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "var_decl": {
+                "ID": "leaderId",
+                "type": [
+                  {
+                    "primitive_type": {
+                      "name": "int",
+                      "range": null
+                    }
+                  }
+                ],
+                "init_expr": {
+                  "value": "null"
+                }
+              }
+            }
+          ]
+        },
+        "transitions": {
+          "transitions": [
+            {
+              "transition": {
+                "condition": {
+                  "value": "true"
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "left",
+                          "field": "reqRead"
+                        },
+                        "expr": null
+                      }
+                    },
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "right",
+                          "field": "reqWrite"
+                        },
+                        "expr": null
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": "buffer",
+                        "expr": {
+                          "value": "null"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "buffer",
+                          "field": "vtype"
+                        },
+                        "expr": "ack"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": "buffer",
+                        "expr": {
+                          "struct_literal": {
+                            "fields": [
+                              {
+                                "field_init": {
+                                  "name": "vtype",
+                                  "expr": "vote"
+                                }
+                              },
+                              {
+                                "field_init": {
+                                  "name": "id",
+                                  "expr": "id"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": "leaderStatus",
+                        "expr": "acknowledged"
+                      }
+                    },
+                    {
+                      "assign": {
+                        "lhs": "leaderId",
+                        "expr": {
+                          "primary_expr": {
+                            "name": "buffer",
+                            "field": "id"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "assign": {
+                        "lhs": "buffer",
+                        "expr": {
+                          "value": "null"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": "leaderStatus",
+                        "expr": "acknowledged"
+                      }
+                    },
+                    {
+                      "assign": {
+                        "lhs": "leaderId",
+                        "expr": {
+                          "primary_expr": {
+                            "name": "buffer",
+                            "field": "id"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "perform": [
+                        "left"
+                      ]
+                    },
+                    {
+                      "assign": {
+                        "lhs": "buffer",
+                        "expr": {
+                          "primary_expr": {
+                            "name": "left",
+                            "field": "value"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "right",
+                          "field": "value"
+                        },
+                        "expr": "buffer"
+                      }
+                    },
+                    {
+                      "perform": [
+                        "right"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "value": "true"
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "notice",
+                          "field": "reqWrite"
+                        },
+                        "expr": {
+                          "primary_expr": {
+                            "name": "query",
+                            "field": "reqWrite"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "query",
+                          "field": "reqRead"
+                        },
+                        "expr": {
+                          "primary_expr": {
+                            "name": "notice",
+                            "field": "reqRead"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": null,
+                "actions": {
+                  "action_block": [
+                    {
+                      "perform": [
+                        "query"
+                      ]
+                    },
+                    {
+                      "assign": {
+                        "lhs": {
+                          "name": "notice",
+                          "field": "value"
+                        },
+                        "expr": {
+                          "struct_literal": {
+                            "fields": [
+                              {
+                                "field_init": {
+                                  "name": "leaderStatus",
+                                  "expr": "leaderStatus"
+                                }
+                              },
+                              {
+                                "field_init": {
+                                  "name": "localID",
+                                  "expr": "id"
+                                }
+                              },
+                              {
+                                "field_init": {
+                                  "name": "leaderID",
+                                  "expr": "leaderID"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "perform": [
+                        "notice"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "system": {
+        "ID": "cluster_instance",
+        "components": [
+          {
+            "component_decl": {
+              "names": "E1",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "E2",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "value": 2
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "E3",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "value": 3
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C1",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": []
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C2",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": []
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C3",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": []
+                }
+              }
+            }
+          }
+        ],
+        "connections": {
+          "connections": [
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "E1",
+                    "field": "left"
+                  },
+                  {
+                    "name": "E2",
+                    "field": "right"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "E2",
+                    "field": "right"
+                  },
+                  {
+                    "name": "E3",
+                    "field": "left"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "E3",
+                    "field": "right"
+                  },
+                  {
+                    "name": "E1",
+                    "field": "left"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C1",
+                    "field": "query"
+                  },
+                  {
+                    "name": "E1",
+                    "field": "query"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C1",
+                    "field": "notice"
+                  },
+                  {
+                    "name": "E1",
+                    "field": "notice"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C2",
+                    "field": "query"
+                  },
+                  {
+                    "name": "E2",
+                    "field": "query"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C2",
+                    "field": "notice"
+                  },
+                  {
+                    "name": "E2",
+                    "field": "notice"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C3",
+                    "field": "query"
+                  },
+                  {
+                    "name": "E3",
+                    "field": "query"
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [],
+                "lhss": [
+                  {
+                    "name": "C3",
+                    "field": "notice"
+                  },
+                  {
+                    "name": "E3",
+                    "field": "notice"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
