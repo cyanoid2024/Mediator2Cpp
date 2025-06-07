@@ -1,0 +1,3032 @@
+{
+  "start": [
+    {
+      "typedef": {
+        "enum_def": {
+          "enum": [
+            "pending",
+            "acknowledged",
+            "empty_leaderStatus"
+          ]
+        },
+        "ID": "status"
+      }
+    },
+    {
+      "typedef": {
+        "enum_def": {
+          "enum": [
+            "waiting",
+            "leader",
+            "follower"
+          ]
+        },
+        "ID": "workerStatus"
+      }
+    },
+    {
+      "typedef": {
+        "enum_def": {
+          "enum": [
+            "vote",
+            "ack",
+            "empty_vtype"
+          ]
+        },
+        "ID": "vType"
+      }
+    },
+    {
+      "typedef": {
+        "struct_def": {
+          "struct": [
+            {
+              "field": {
+                "ID": "vtype",
+                "type": "vType"
+              }
+            },
+            {
+              "field": {
+                "ID": "id",
+                "type": {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "ID": "voteMsg"
+      }
+    },
+    {
+      "typedef": {
+        "struct_def": {
+          "struct": [
+            {
+              "field": {
+                "ID": "leaderStatus",
+                "type": "status"
+              }
+            },
+            {
+              "field": {
+                "ID": "localID",
+                "type": {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              }
+            },
+            {
+              "field": {
+                "ID": "leaderID",
+                "type": {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "ID": "localMsg"
+      }
+    },
+    {
+      "automaton": {
+        "ID": "election_module",
+        "template": [
+          {
+            "template_param": {
+              "ID": "elec_id",
+              "type": {
+                "ID": {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "ports": [
+          {
+            "port": {
+              "ID": "left",
+              "DIRECTION": "in",
+              "type": {
+                "ID": "voteMsg"
+              }
+            }
+          },
+          {
+            "port": {
+              "ID": "right",
+              "DIRECTION": "out",
+              "type": {
+                "ID": "voteMsg"
+              }
+            }
+          },
+          {
+            "port": {
+              "ID": "query",
+              "DIRECTION": "in",
+              "type": {
+                "ID": "localMsg"
+              }
+            }
+          },
+          {
+            "port": {
+              "ID": "notice",
+              "DIRECTION": "out",
+              "type": {
+                "ID": "localMsg"
+              }
+            }
+          }
+        ],
+        "variables": {
+          "variables": [
+            {
+              "var_decl": {
+                "ID": "leader_status",
+                "type": {
+                  "ID": "status"
+                },
+                "init_expr": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "lhs": {
+                                "ID": "pending"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "var_decl": {
+                "ID": "buffer",
+                "type": {
+                  "ID": "voteMsg"
+                },
+                "init_expr": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "struct_literal": {
+                                "field_type": {
+                                  "ID": "voteMsg"
+                                },
+                                "fields": [
+                                  {
+                                    "field_init": {
+                                      "name": "vtype",
+                                      "expr": {
+                                        "expr": {
+                                          "compare_expr": {
+                                            "addi_expr": {
+                                              "multi_expr": {
+                                                "primary_expr": [
+                                                  {
+                                                    "lhs": {
+                                                      "ID": "vote"
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "field_init": {
+                                      "name": "id",
+                                      "expr": {
+                                        "expr": {
+                                          "compare_expr": {
+                                            "addi_expr": {
+                                              "multi_expr": {
+                                                "primary_expr": [
+                                                  {
+                                                    "lhs": {
+                                                      "ID": "elec_id"
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "var_decl": {
+                "ID": "leaderId",
+                "type": {
+                  "ID": {
+                    "primitive_type": {
+                      "name": "int",
+                      "range": null
+                    }
+                  }
+                },
+                "init_expr": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "value": 0
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "transitions": {
+          "transitions": [
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "left"
+                                }
+                              },
+                              "field": "reqRead"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "left": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "op": "==",
+                                "right": {
+                                  "compare_expr": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "struct_literal": {
+                                              "field_type": {
+                                                "ID": "voteMsg"
+                                              },
+                                              "fields": [
+                                                {
+                                                  "field_init": {
+                                                    "name": "vtype",
+                                                    "expr": {
+                                                      "expr": {
+                                                        "compare_expr": {
+                                                          "addi_expr": {
+                                                            "multi_expr": {
+                                                              "primary_expr": [
+                                                                {
+                                                                  "lhs": {
+                                                                    "ID": "empty_vtype"
+                                                                  }
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "field_init": {
+                                                    "name": "id",
+                                                    "expr": {
+                                                      "expr": {
+                                                        "compare_expr": {
+                                                          "addi_expr": {
+                                                            "multi_expr": {
+                                                              "primary_expr": [
+                                                                {
+                                                                  "value": 0
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "right"
+                                }
+                              },
+                              "field": "reqWrite"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "left": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "op": "!=",
+                                "right": {
+                                  "compare_expr": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "struct_literal": {
+                                              "field_type": {
+                                                "ID": "voteMsg"
+                                              },
+                                              "fields": [
+                                                {
+                                                  "field_init": {
+                                                    "name": "vtype",
+                                                    "expr": {
+                                                      "expr": {
+                                                        "compare_expr": {
+                                                          "addi_expr": {
+                                                            "multi_expr": {
+                                                              "primary_expr": [
+                                                                {
+                                                                  "lhs": {
+                                                                    "ID": "empty_vtype"
+                                                                  }
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "field_init": {
+                                                    "name": "id",
+                                                    "expr": {
+                                                      "expr": {
+                                                        "compare_expr": {
+                                                          "addi_expr": {
+                                                            "multi_expr": {
+                                                              "primary_expr": [
+                                                                {
+                                                                  "value": 0
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "left": {
+                          "compare_expr": {
+                            "left": {
+                              "addi_expr": {
+                                "multi_expr": {
+                                  "primary_expr": [
+                                    {
+                                      "lhs": {
+                                        "name": {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        },
+                                        "field": "vtype"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": "==",
+                            "right": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "vote"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "op": "&&",
+                        "right": {
+                          "expr": {
+                            "compare_expr": {
+                              "left": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "buffer"
+                                            }
+                                          },
+                                          "field": "id"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "op": "<",
+                              "right": {
+                                "compare_expr": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "ID": "elec_id"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "buffer"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "struct_literal": {
+                                          "field_type": {
+                                            "ID": "voteMsg"
+                                          },
+                                          "fields": [
+                                            {
+                                              "field_init": {
+                                                "name": "vtype",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "empty_vtype"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "id",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "value": 0
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "left": {
+                          "compare_expr": {
+                            "left": {
+                              "addi_expr": {
+                                "multi_expr": {
+                                  "primary_expr": [
+                                    {
+                                      "lhs": {
+                                        "name": {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        },
+                                        "field": "vtype"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": "==",
+                            "right": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "vote"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "op": "&&",
+                        "right": {
+                          "expr": {
+                            "compare_expr": {
+                              "left": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "buffer"
+                                            }
+                                          },
+                                          "field": "id"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "op": "==",
+                              "right": {
+                                "compare_expr": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "ID": "elec_id"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "buffer"
+                                }
+                              },
+                              "field": "vtype"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "ack"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "left": {
+                          "compare_expr": {
+                            "left": {
+                              "addi_expr": {
+                                "multi_expr": {
+                                  "primary_expr": [
+                                    {
+                                      "lhs": {
+                                        "name": {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        },
+                                        "field": "vtype"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": "==",
+                            "right": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "ack"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "op": "&&",
+                        "right": {
+                          "expr": {
+                            "compare_expr": {
+                              "left": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "buffer"
+                                            }
+                                          },
+                                          "field": "id"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              "op": "<",
+                              "right": {
+                                "compare_expr": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "ID": "elec_id"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "buffer"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "struct_literal": {
+                                          "field_type": {
+                                            "ID": "voteMsg"
+                                          },
+                                          "fields": [
+                                            {
+                                              "field_init": {
+                                                "name": "vtype",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "vote"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "id",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "elec_id"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "left": {
+                          "compare_expr": {
+                            "left": {
+                              "addi_expr": {
+                                "multi_expr": {
+                                  "primary_expr": [
+                                    {
+                                      "lhs": {
+                                        "name": {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        },
+                                        "field": "vtype"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": "==",
+                            "right": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "ack"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "op": "&&",
+                        "right": {
+                          "expr": {
+                            "left": {
+                              "compare_expr": {
+                                "left": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "name": {
+                                              "lhs": {
+                                                "ID": "buffer"
+                                              }
+                                            },
+                                            "field": "id"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "op": ">=",
+                                "right": {
+                                  "compare_expr": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "lhs": {
+                                              "ID": "elec_id"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "op": "&&",
+                            "right": {
+                              "expr": {
+                                "compare_expr": {
+                                  "left": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "lhs": {
+                                              "name": {
+                                                "lhs": {
+                                                  "ID": "buffer"
+                                                }
+                                              },
+                                              "field": "id"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "op": ">=",
+                                  "right": {
+                                    "compare_expr": {
+                                      "addi_expr": {
+                                        "multi_expr": {
+                                          "primary_expr": [
+                                            {
+                                              "lhs": {
+                                                "ID": "elec_id"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "leader_status"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "acknowledged"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "leaderId"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "buffer"
+                                            }
+                                          },
+                                          "field": "id"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "buffer"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "struct_literal": {
+                                          "field_type": {
+                                            "ID": "voteMsg"
+                                          },
+                                          "fields": [
+                                            {
+                                              "field_init": {
+                                                "name": "vtype",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "empty_vtype"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "id",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "value": 0
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "left": {
+                          "compare_expr": {
+                            "left": {
+                              "addi_expr": {
+                                "multi_expr": {
+                                  "primary_expr": [
+                                    {
+                                      "lhs": {
+                                        "name": {
+                                          "lhs": {
+                                            "ID": "buffer"
+                                          }
+                                        },
+                                        "field": "vtype"
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "op": "==",
+                            "right": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "ack"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "op": "&&",
+                        "right": {
+                          "expr": {
+                            "left": {
+                              "compare_expr": {
+                                "left": {
+                                  "addi_expr": {
+                                    "multi_expr": {
+                                      "primary_expr": [
+                                        {
+                                          "lhs": {
+                                            "name": {
+                                              "lhs": {
+                                                "ID": "buffer"
+                                              }
+                                            },
+                                            "field": "id"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "op": ">=",
+                                "right": {
+                                  "compare_expr": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "lhs": {
+                                              "ID": "elec_id"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "op": "&&",
+                            "right": {
+                              "expr": {
+                                "compare_expr": {
+                                  "left": {
+                                    "addi_expr": {
+                                      "multi_expr": {
+                                        "primary_expr": [
+                                          {
+                                            "lhs": {
+                                              "name": {
+                                                "lhs": {
+                                                  "ID": "buffer"
+                                                }
+                                              },
+                                              "field": "id"
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "op": "!=",
+                                  "right": {
+                                    "compare_expr": {
+                                      "addi_expr": {
+                                        "multi_expr": {
+                                          "primary_expr": [
+                                            {
+                                              "lhs": {
+                                                "ID": "elec_id"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "leader_status"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "acknowledged"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "leaderId"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "buffer"
+                                            }
+                                          },
+                                          "field": "id"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "==",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "compare_expr": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "name": {
+                                      "lhs": {
+                                        "ID": "left"
+                                      }
+                                    },
+                                    "field": "reqWrite"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "perform": [
+                          "left"
+                        ]
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "ID": "buffer"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "name": {
+                                            "lhs": {
+                                              "ID": "left"
+                                            }
+                                          },
+                                          "field": "value"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "left": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "ID": "buffer"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        "op": "!=",
+                        "right": {
+                          "compare_expr": {
+                            "addi_expr": {
+                              "multi_expr": {
+                                "primary_expr": [
+                                  {
+                                    "struct_literal": {
+                                      "field_type": {
+                                        "ID": "voteMsg"
+                                      },
+                                      "fields": [
+                                        {
+                                          "field_init": {
+                                            "name": "vtype",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "lhs": {
+                                                            "ID": "empty_vtype"
+                                                          }
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "field_init": {
+                                            "name": "id",
+                                            "expr": {
+                                              "expr": {
+                                                "compare_expr": {
+                                                  "addi_expr": {
+                                                    "multi_expr": {
+                                                      "primary_expr": [
+                                                        {
+                                                          "value": 0
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "compare_expr": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "name": {
+                                      "lhs": {
+                                        "ID": "right"
+                                      }
+                                    },
+                                    "field": "reqRead"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "right"
+                                }
+                              },
+                              "field": "value"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "lhs": {
+                                          "ID": "buffer"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "perform": [
+                          "right"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "left": {
+                      "compare_expr": {
+                        "addi_expr": {
+                          "multi_expr": {
+                            "primary_expr": [
+                              {
+                                "lhs": {
+                                  "name": {
+                                    "lhs": {
+                                      "ID": "query"
+                                    }
+                                  },
+                                  "field": "reqRead"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "op": "&&",
+                    "right": {
+                      "expr": {
+                        "compare_expr": {
+                          "addi_expr": {
+                            "multi_expr": {
+                              "primary_expr": [
+                                {
+                                  "lhs": {
+                                    "name": {
+                                      "lhs": {
+                                        "ID": "notice"
+                                      }
+                                    },
+                                    "field": "reqWrite"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "perform": [
+                          "query"
+                        ]
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "notice"
+                                }
+                              },
+                              "field": "value"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "struct_literal": {
+                                          "field_type": {
+                                            "ID": "localMsg"
+                                          },
+                                          "fields": [
+                                            {
+                                              "field_init": {
+                                                "name": "leaderStatus",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "leader_status"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "localID",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "elec_id"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "leaderID",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "leaderId"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "perform": [
+                          "notice"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "automaton": {
+        "ID": "worker",
+        "template": [
+          {
+            "template_param": {
+              "ID": "name",
+              "type": {
+                "ID": {
+                  "primitive_type": {
+                    "name": "int",
+                    "range": null
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "ports": [
+          {
+            "port": {
+              "ID": "query",
+              "DIRECTION": "out",
+              "type": {
+                "ID": "localMsg"
+              }
+            }
+          },
+          {
+            "port": {
+              "ID": "notice",
+              "DIRECTION": "in",
+              "type": {
+                "ID": "localMsg"
+              }
+            }
+          }
+        ],
+        "variables": {
+          "variables": [
+            {
+              "var_decl": {
+                "ID": "worker_status",
+                "type": {
+                  "ID": "workerStatus"
+                },
+                "init_expr": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "lhs": {
+                                "ID": "waiting"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "transitions": {
+          "transitions": [
+            {
+              "transition": {
+                "condition": {
+                  "expr": {
+                    "compare_expr": {
+                      "addi_expr": {
+                        "multi_expr": {
+                          "primary_expr": [
+                            {
+                              "value": "true"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "actions": {
+                  "action_block": [
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "query"
+                                }
+                              },
+                              "field": "reqWrite"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "value": "true"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "assign": {
+                          "lhs": {
+                            "lhs": {
+                              "name": {
+                                "lhs": {
+                                  "ID": "query"
+                                }
+                              },
+                              "field": "value"
+                            }
+                          },
+                          "expr": {
+                            "expr": {
+                              "compare_expr": {
+                                "addi_expr": {
+                                  "multi_expr": {
+                                    "primary_expr": [
+                                      {
+                                        "struct_literal": {
+                                          "field_type": {
+                                            "ID": "localMsg"
+                                          },
+                                          "fields": [
+                                            {
+                                              "field_init": {
+                                                "name": "leaderStatus",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "lhs": {
+                                                                "ID": "empty_leaderStatus"
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "localID",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "value": 0
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "field_init": {
+                                                "name": "leaderID",
+                                                "expr": {
+                                                  "expr": {
+                                                    "compare_expr": {
+                                                      "addi_expr": {
+                                                        "multi_expr": {
+                                                          "primary_expr": [
+                                                            {
+                                                              "value": 0
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "action_stmt": {
+                        "perform": [
+                          "query"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "system": {
+        "ID": "cluster_instance",
+        "components": [
+          {
+            "component_decl": {
+              "names": "E1",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "E2",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "E3",
+              "component_type": {
+                "component_type": {
+                  "ID": "election_module",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 3
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C1",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C2",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "component_decl": {
+              "names": "C3",
+              "component_type": {
+                "component_type": {
+                  "ID": "worker",
+                  "template_args": [
+                    {
+                      "primary_expr": [
+                        {
+                          "value": 3
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "connections": {
+          "connections": [
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "voteMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E1"
+                        }
+                      },
+                      "field": "right"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E2"
+                        }
+                      },
+                      "field": "left"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "voteMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E2"
+                        }
+                      },
+                      "field": "right"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E3"
+                        }
+                      },
+                      "field": "left"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "voteMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E3"
+                        }
+                      },
+                      "field": "right"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E1"
+                        }
+                      },
+                      "field": "left"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C1"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E1"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C1"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E1"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C2"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E2"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C2"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E2"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C3"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E3"
+                        }
+                      },
+                      "field": "query"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "connection": {
+                "ID": "Sync",
+                "template_args": [
+                  {
+                    "primary_expr": [
+                      {
+                        "lhs": {
+                          "ID": "localMsg"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "lhss": [
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "C3"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  },
+                  {
+                    "lhs": {
+                      "name": {
+                        "lhs": {
+                          "ID": "E3"
+                        }
+                      },
+                      "field": "notice"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
