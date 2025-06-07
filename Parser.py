@@ -5,7 +5,7 @@ from Transformer import MediatorTransformer
 import json
 
 def tree_to_dict(tree):
-    if isinstance(tree, Tree):  # 使用导入的 Tree 类
+    if isinstance(tree, Tree):  
         return {
             "data": tree.data,
             "children": [tree_to_dict(child) for child in tree.children]
