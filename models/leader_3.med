@@ -1,0 +1,134 @@
+// 3-leader election model
+
+typedef enum { pending, acknowledged, empty_leaderStatus } as status;
+
+typedef enum { waiting, leader, follower} as workerStatus;
+
+typedef enum { vote, ack, empty_vtype } as vType; 
+
+typedef struct {
+	vtype: vType,
+	id: int
+} as voteMsg;
+
+typedef struct {
+	leaderStatus : status,
+	localID : int,
+	leaderID : int
+} as localMsg;
+
+
+
+automaton <elec_id:int> election_module (
+	left  : in voteMsg,  right  : out voteMsg,
+	query : in localMsg, notice : out localMsg
+) {
+	variables {
+		leader_status : status init pending;
+		buffer : voteMsg init voteMsg{vtype: vote, id:elec_id};
+		leaderId : int init 0;
+	}
+	
+	transitions {
+
+		true -> { left.reqRead := buffer == voteMsg{vtype: empty_vtype, id:0}; right.reqWrite := buffer != voteMsg{vtype: empty_vtype, id:0}; }
+		
+
+		buffer != voteMsg{vtype: empty_vtype, id:0} && buffer.vtype == vote && buffer.id < elec_id -> {
+            buffer := voteMsg{vtype: empty_vtype, id:0};
+        }
+
+
+		buffer != voteMsg{vtype: empty_vtype, id:0} && buffer.vtype == vote && buffer.id == elec_id -> {
+			buffer.vtype := ack;
+		}
+		
+
+		buffer != voteMsg{vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id < elec_id -> {
+			// restart voting if the acknowledged leader has a smaller id
+			buffer := voteMsg{ vtype: vote, id: elec_id };
+		}
+		
+
+        buffer != voteMsg{vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id >= elec_id && buffer.id >= elec_id -> {
+            leader_status := acknowledged;
+            leaderId := buffer.id;
+            buffer := voteMsg{vtype: empty_vtype, id:0};
+        }
+
+
+        buffer != voteMsg{vtype: empty_vtype, id:0} && buffer.vtype == ack && buffer.id >= elec_id && buffer.id != elec_id -> {
+            leader_status := acknowledged;
+            leaderId := buffer.id;
+
+        }
+		
+
+		buffer == voteMsg{vtype: empty_vtype, id:0} && left.reqWrite -> {
+			perform left;
+			buffer := left.value;
+		}
+		
+
+		buffer != voteMsg{vtype: empty_vtype, id:0} && right.reqRead -> {
+			right.value := buffer;
+			perform right;
+		}
+	
+	/*
+	 * transitions that describe local communication between a component and the leader election module
+	 */
+		
+
+		query.reqRead && notice.reqWrite -> {
+			perform query;
+			notice.value := localMsg{ leaderStatus : leader_status, localID: elec_id, leaderID: leaderId };
+			perform notice;
+		}
+	}
+}
+
+
+automaton <name:int> worker(
+    query : out localMsg, 
+    notice : in localMsg
+) {
+    variables {
+        worker_status : workerStatus init waiting;
+    }
+
+    transitions {
+		
+        true -> {
+            query.reqWrite := true;
+            query.value := localMsg{ leaderStatus: empty_leaderStatus, localID: 0, leaderID: 0 };
+            perform query;
+        }
+    }
+}
+
+
+
+system cluster_instance() {
+	components {
+		E1 : election_module<1>;
+        E2 : election_module<2>;
+		E3 : election_module<3>;
+		
+		C1: worker<1>;
+        C2: worker<2>;
+        C3: worker<3>;
+	}
+	connections {
+		Sync<voteMsg>(E1.right, E2.left);
+		Sync<voteMsg>(E2.right, E3.left );
+		Sync<voteMsg>(E3.right, E1.left );
+		
+		Sync<localMsg>(C1.query,  E1.query );
+		Sync<localMsg>(C1.notice, E1.notice);
+		Sync<localMsg>(C2.query,  E2.query );
+		Sync<localMsg>(C2.notice, E2.notice);
+		Sync<localMsg>(C3.query,  E3.query );
+		Sync<localMsg>(C3.notice, E3.notice);
+	}
+}
