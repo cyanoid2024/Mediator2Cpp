@@ -1,12 +1,14 @@
 
 // head
 
+#include <cstdlib>
+#include <ctime>
 // #include <enumeration>
 #include <functional>
 #include <iostream>
 #include<iomanip>
 #include <memory>
-#include <mpi.h>
+//#include <mpi.h>
 #include <optional>
 #include <random>
 #include <string>
@@ -19,27 +21,65 @@
 
 // head-port
 
-enum Direction { in, out };
-
+int in = 0;
+int out = 1;
+#include <iostream>
+#include <optional>
 
 template <typename T>
 struct Port {
-    Direction p_direction;
+    int p_direction;
     bool reqRead = false;
     bool reqWrite = false;
-    std::optional<T> value;
+    // std::optional<T> value;
+    T value;
 
-    Port(Direction dir, T init_val) 
+    // neighborhood of ports
+    std::vector<std::shared_ptr<Port<T>>> nbhd;
+    void addNbhd(std::shared_ptr<Port<T>> neighbor) {
+        nbhd.push_back(neighbor);
+    }
+    
+
+    Port(int& dir, T& init_val) 
         : p_direction(dir), value(init_val) {}
 
-    Port(Direction dir) 
+    Port(int& dir) 
         : p_direction(dir) {}
 };
 
-void Sync(Port<T> port1, Port<T> port2) {
-    // Synchronize two ports
+template <typename T1>
+void Sync(Port<T1> port1, Port<T1> port2) {
+    port1.addNbhd(port2);
+    port2.addNbhd(port1);
 }
 
+template <typename T3>
+void perform(Port<T3> port) {
+    // Perform some operation with the port
+    if (port.p_direction == in && port.reqRead) {
+        for (const auto& portnb : port.nbhd) {
+            if (portnb->p_direction == out) {
+                
+                port.value = portnb->value; // Assuming we want to read the value
+            }
+        }
+    }
+    if (port.p_direction == out && port.reqWrite) {
+        for (const auto& portnb : port.nbhd) {
+            if (portnb->p_direction == in) {
+                
+                portnb->value = port.value;
+            }
+        }
+        
+    }
+}
+
+template <typename T2>
+void perform(Port<T2> port){
+
+}
 
 // head-transition
 using Statement = std::function<void()>;
@@ -49,15 +89,40 @@ struct Transition {
     Guard guard;
     std::vector<Statement> statements;
 };
-// Transition transition; // not here
 
 using TransitionGroup = std::vector<Transition>;
-// TransitionGroup group; // not here
 
 using TransitionMap = std::vector<TransitionGroup>;
-// TransitionMap map; // not here
+
 // PROBLEM: ONLY GROUP-TRANSITION IS SUPPORTED
-// lan de gai le hao fan
+
+void executeTransition(const Transition& transition) {
+    for (const auto& statement : transition.statements) {
+        statement();
+    }
+}
+
+void processTransitionMap(const TransitionMap& transitionMap) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+    size_t groupIndex = 0;
+
+    while (true) {
+        const TransitionGroup& group = transitionMap[groupIndex];
+        // choose a random transition from the current group
+        size_t transitionIndex = rand() % group.size(); 
+        const Transition& transition = group[transitionIndex];
+
+        // guard returns true, execute the transition
+        if (transition.guard()) {
+            executeTransition(transition);
+            break; 
+        }
+
+        // move to the next group
+        groupIndex = (groupIndex + 1) % transitionMap.size();
+    }
+}
+
 
 // type_def
 
@@ -98,19 +163,19 @@ struct localMsg {
 // automaton_def
 
 struct election_module{
-	int id;
-	Port<voteMsg> left(Direction::in);
-Port<voteMsg> right(Direction::out);
-Port<localMsg> query(Direction::in);
-Port<localMsg> notice(Direction::out);
+	int elec_id;
+	Port<voteMsg> left{ in };
+Port<voteMsg> right{ out };
+Port<localMsg> query{ in };
+Port<localMsg> notice{ out };
 
 	status leader_status = pending;
-voteMsg buffer = { vtype : vote, id : id };
+voteMsg buffer = voteMsg{ vote, elec_id };
 int leaderId = 0;
 
 	Transition transition; TransitionGroup group; TransitionMap map;
 
-	election_module(int id):  id(id)
+	election_module(int elec_id):  elec_id(elec_id)
 	{
 		
 	// transition def
@@ -118,30 +183,14 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
+	transition.guard = [this,elec_id]() -> bool {
 		return true;
 	};
-	transition.statements.push_back([]() {
-		left.reqRead = (buffer == { vtype : empty_vtype, id : 0 });
+	transition.statements.push_back([this,elec_id]() {
+		left.reqRead = (buffer == voteMsg{ empty_vtype, 0 });
 	});
-	transition.statements.push_back([]() {right.reqWrite = (buffer != null);
-	});
-	group.clear();
-	group.push_back(transition);
-	map.push_back(group);
-
-
-
-	// transition def
-
-	transition.statements.clear();
-
-	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && ((buffer.vtype == vote) && (buffer.id < id)));
-	};
-	transition.statements.push_back([]() {
-		buffer = { vtype : empty_vtype, id : 0 };
+	transition.statements.push_back([this,elec_id]() {
+		right.reqWrite = (buffer != voteMsg{ empty_vtype, 0 });
 	});
 	group.clear();
 	group.push_back(transition);
@@ -154,10 +203,27 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && ((buffer.vtype == vote) && (buffer.id == id)));
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && ((buffer.vtype == vote) && (buffer.id < elec_id)));
 	};
-	transition.statements.push_back([]() {
+	transition.statements.push_back([this,elec_id]() {
+		buffer = voteMsg{ empty_vtype, 0 };
+	});
+	group.clear();
+	group.push_back(transition);
+	map.push_back(group);
+
+
+
+	// transition def
+
+	transition.statements.clear();
+
+	// guard def
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && ((buffer.vtype == vote) && (buffer.id == elec_id)));
+	};
+	transition.statements.push_back([this,elec_id]() {
 		buffer.vtype = ack;
 	});
 	group.clear();
@@ -171,11 +237,11 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && ((buffer.vtype == ack) && (buffer.id < id)));
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && ((buffer.vtype == ack) && (buffer.id < elec_id)));
 	};
-	transition.statements.push_back([]() {
-		buffer = { vtype : vote, id : id };
+	transition.statements.push_back([this,elec_id]() {
+		buffer = voteMsg{ vote, elec_id };
 	});
 	group.clear();
 	group.push_back(transition);
@@ -188,15 +254,17 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && ((buffer.vtype == ack) && ((buffer.id >= id) && (buffer.id == id))));
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && ((buffer.vtype == ack) && ((buffer.id >= elec_id) && (buffer.id >= elec_id))));
 	};
-	transition.statements.push_back([]() {
+	transition.statements.push_back([this,elec_id]() {
 		leader_status = acknowledged;
 	});
-	transition.statements.push_back([]() {leaderId = buffer.id;
+	transition.statements.push_back([this,elec_id]() {
+		leaderId = buffer.id;
 	});
-	transition.statements.push_back([]() {buffer = { vtype : empty_vtype, id : 0 };
+	transition.statements.push_back([this,elec_id]() {
+		buffer = voteMsg{ empty_vtype, 0 };
 	});
 	group.clear();
 	group.push_back(transition);
@@ -209,13 +277,14 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && ((buffer.vtype == ack) && ((buffer.id >= id) && (buffer.id != id))));
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && ((buffer.vtype == ack) && ((buffer.id >= elec_id) && (buffer.id != elec_id))));
 	};
-	transition.statements.push_back([]() {
+	transition.statements.push_back([this,elec_id]() {
 		leader_status = acknowledged;
 	});
-	transition.statements.push_back([]() {leaderId = buffer.id;
+	transition.statements.push_back([this,elec_id]() {
+		leaderId = buffer.id;
 	});
 	group.clear();
 	group.push_back(transition);
@@ -228,13 +297,15 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer == { vtype : empty_vtype, id : 0 }) && left.reqWrite);
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer == voteMsg{ empty_vtype, 0 }) && left.reqWrite);
 	};
-	transition.statements.push_back([]() {
-		perform left;
+	transition.statements.push_back([this,elec_id]() {
+		perform(left);
+
 	});
-	transition.statements.push_back([]() {buffer = left.value;
+	transition.statements.push_back([this,elec_id]() {
+		buffer = left.value;
 	});
 	group.clear();
 	group.push_back(transition);
@@ -247,13 +318,15 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return ((buffer != { vtype : empty_vtype, id : 0 }) && right.reqRead);
+	transition.guard = [this,elec_id]() -> bool {
+		return ((buffer != voteMsg{ empty_vtype, 0 }) && right.reqRead);
 	};
-	transition.statements.push_back([]() {
+	transition.statements.push_back([this,elec_id]() {
 		right.value = buffer;
 	});
-	transition.statements.push_back([]() {perform right;
+	transition.statements.push_back([this,elec_id]() {
+		perform(right);
+
 	});
 	group.clear();
 	group.push_back(transition);
@@ -266,40 +339,28 @@ int leaderId = 0;
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return true;
+	transition.guard = [this,elec_id]() -> bool {
+		return (query.reqRead && notice.reqWrite);
 	};
-	transition.statements.push_back([]() {
-		notice.reqWrite = query.reqWrite;
+	transition.statements.push_back([this,elec_id]() {
+		perform(query);
+
 	});
-	transition.statements.push_back([]() {query.reqRead = notice.reqRead;
+	transition.statements.push_back([this,elec_id]() {
+		notice.value = localMsg{ leader_status, elec_id, leaderId };
+	});
+	transition.statements.push_back([this,elec_id]() {
+		perform(notice);
+
 	});
 	group.clear();
 	group.push_back(transition);
 	map.push_back(group);
 
 
-
-	// transition def
-
-	transition.statements.clear();
-
-	// guard def
-	transition.guard = []() -> bool {
-		return (notice.reqRead && notice.reqWrite);
-	};
-	transition.statements.push_back([]() {
-		perform query;
-	});
-	transition.statements.push_back([]() {notice.value = { leaderStatus : leader_status, localID : id, leaderID : leaderID };
-	});
-	transition.statements.push_back([]() {perform notice;
-	});
-	group.clear();
-	group.push_back(transition);
-	map.push_back(group);
-
-
+	}
+void doTransition() {
+		processTransitionMap(map);
 	}
 };
 
@@ -309,8 +370,8 @@ int leaderId = 0;
 
 struct worker{
 	int name;
-	Port<localMsg> query(Direction::out);
-Port<localMsg> notice(Direction::in);
+	Port<localMsg> query{ out };
+Port<localMsg> notice{ in };
 
 	workerStatus worker_status = waiting;
 
@@ -324,78 +385,27 @@ Port<localMsg> notice(Direction::in);
 	transition.statements.clear();
 
 	// guard def
-	transition.guard = []() -> bool {
-		return (notice.reqWrite && ((notice.value.leaderStatus == acknowledged) && (notice.value.leaderID == notice.value.localID)));
-	};
-	transition.statements.push_back([]() {
-		perform notice;
-	});
-	transition.statements.push_back([]() {worker_status = leader;
-	});
-	group.clear();
-	group.push_back(transition);
-	map.push_back(group);
-
-
-
-	// transition def
-
-	transition.statements.clear();
-
-	// guard def
-	transition.guard = []() -> bool {
-		return (notice.reqWrite && ((notice.value.leaderStatus == acknowledged) && (notice.value.leaderID != notice.value.localID)));
-	};
-	transition.statements.push_back([]() {
-		perform notice;
-	});
-	transition.statements.push_back([]() {worker_status = follower;
-	});
-	group.clear();
-	group.push_back(transition);
-	map.push_back(group);
-
-
-
-	// transition def
-
-	transition.statements.clear();
-
-	// guard def
-	transition.guard = []() -> bool {
-		return (notice.reqWrite && (notice.value.leaderStatus == pending));
-	};
-	transition.statements.push_back([]() {
-		perform notice;
-	});
-	transition.statements.push_back([]() {worker_status = waiting;
-	});
-	group.clear();
-	group.push_back(transition);
-	map.push_back(group);
-
-
-
-	// transition def
-
-	transition.statements.clear();
-
-	// guard def
-	transition.guard = []() -> bool {
+	transition.guard = [this,name]() -> bool {
 		return true;
 	};
-	transition.statements.push_back([]() {
+	transition.statements.push_back([this,name]() {
 		query.reqWrite = true;
 	});
-	transition.statements.push_back([]() {query.value = { leaderStatus : empty_leaderStatus, localID : 0, leaderID : 0 };
+	transition.statements.push_back([this,name]() {
+		query.value = localMsg{ empty_leaderStatus, 0, 0 };
 	});
-	transition.statements.push_back([]() {perform query;
+	transition.statements.push_back([this,name]() {
+		perform(query);
+
 	});
 	group.clear();
 	group.push_back(transition);
 	map.push_back(group);
 
 
+	}
+void doTransition() {
+		processTransitionMap(map);
 	}
 };
 
@@ -410,13 +420,13 @@ worker C1(1);
 worker C2(2);
 worker C3(3);
 
-Sync<msgVote> (E1.left, E2.right);
-Sync<msgVote> (E2.right, E3.left);
-Sync<msgVote> (E3.right, E1.left);
-Sync<msgLocal> (C1.query, E1.query);
-Sync<msgLocal> (C1.notice, E1.notice);
-Sync<msgLocal> (C2.query, E2.query);
-Sync<msgLocal> (C2.notice, E2.notice);
-Sync<msgLocal> (C3.query, E3.query);
-Sync<msgLocal> (C3.notice, E3.notice);
+Sync<voteMsg> (E1.right, E2.left);
+Sync<voteMsg> (E2.right, E3.left);
+Sync<voteMsg> (E3.right, E1.left);
+Sync<localMsg> (C1.query, E1.query);
+Sync<localMsg> (C1.notice, E1.notice);
+Sync<localMsg> (C2.query, E2.query);
+Sync<localMsg> (C2.notice, E2.notice);
+Sync<localMsg> (C3.query, E3.query);
+Sync<localMsg> (C3.notice, E3.notice);
 }
