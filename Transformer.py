@@ -249,12 +249,14 @@ class MediatorTransformer(Transformer):
         return {"prec_expr": items[0]}
 
     def struct_literal(self, items):
-        field_inits = [field for field in items if isinstance(field, dict)]
-        return {"struct_literal": {"fields": field_inits}}
+        field_type = items[0]
+        # field_inits = [field for field in items if isinstance(field, dict)]
+        field_inits = items[1:]  
+        return {"struct_literal": {"field_type": field_type, "fields": field_inits}}
 
     def field_init(self, items):
         id, expr = items
-        return {"field_init": {"name": id, "expr": expr}}
+        return {"field_init": { "name": id, "expr": expr}}
 
     def function_call(self, items):
         id = items[0]
@@ -262,6 +264,7 @@ class MediatorTransformer(Transformer):
         return {"function_call": {"name": id, "args": args}}
 
     def value(self, items):
+        # pprint(items)
         return {"value": items[0]}
 
     def lhs(self, items):
@@ -269,6 +272,9 @@ class MediatorTransformer(Transformer):
             return {"lhs":{"ID": items[0]}}
         elif len(items) == 2:
             return {"lhs": {"name": items[0], "field": items[1]}}
+        
+    def field_type(self, items):
+        return {"ID": items[0].value}
 
     def STRING(self, s):
         return s[1:-1]
