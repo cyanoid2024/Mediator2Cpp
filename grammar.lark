@@ -113,7 +113,8 @@ primary_expr: value
 
 prec_expr: expr            
 
-struct_literal: "{" field_init ("," field_init)* "}"
+struct_literal: field_type "{" field_init ("," field_init)* "}"
+field_type: ID
 field_init: ID ":" expr
 function_call: ID "(" (expr ("," expr)*)? ")"
 
@@ -124,7 +125,7 @@ value: NUMBER
         | NULL
 TRUE: "true"
 FALSE: "false"
-NULL: "null"
+NULL: "NULL"
 
 lhs: ID | lhs "." ID
 
